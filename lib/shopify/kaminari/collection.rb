@@ -115,9 +115,22 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
     @total_count ||= begin
       # Get the parameters without the pagination parameters.
       options = original_params.with_indifferent_access.except(:page, :limit)
+      count = 0
 
       # Ask Shopify how many records there are for the given query.
-      count = resource_class.count(options)
+      if resource_class == ShopifyAPI::Product && options[:title].present?
+        # Product api does not allow to filter by title in count action
+        lmt = 250
+
+        loop do
+          count += resource_class.all(params: options.merge(fields: 'id', page: 1, limit: lmt)).count
+          break if count.zero? || (count % lmt).positive?
+        end
+      else
+        count = resource_class.count(options)
+      end
+
+      count
     end
   end
 
