@@ -20,6 +20,33 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
 
   self.paginates_per(DEFAULT_LIMIT_VALUE)
 
+  def response
+    @response ||= resource_class.connection.response
+  end
+
+  def cursor_pagination
+    return @cursor_pagination if @cursor_pagination.present?
+
+    @cursor_pagination = {}
+
+    return @cursor_pagination if response.header['link'].blank?
+
+    response.header['link'].split(',').each do |link|
+      begin
+        h = link.scan(/<([^>]+)>|rel="([^"]+)"/).flatten.compact
+        query = CGI::parse(URI.parse(h.first).query)
+        @cursor_pagination.merge!(
+          h.last.to_sym => { link: h.first, limit: query['limit'].first.to_i, page_info: query['page_info'].last }
+        )
+      rescue => e
+        p e
+      end
+    end
+
+    @cursor_pagination
+  end
+
+
   # The page that was requested from the API.
   #
   # @return [Integer] The current page.

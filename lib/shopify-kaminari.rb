@@ -7,9 +7,12 @@ require 'shopify_api'
 module Shopify
   module Kaminari
     autoload :Collection, 'shopify/kaminari/collection'
+    autoload :Helper, 'shopify/kaminari/helper'
     autoload :VERSION, 'shopify/kaminari/version'
   end
 end
+
+ActionView::Base.send :include, Shopify::Kaminari::Helper
 
 ShopifyAPI::Base.class_eval do
   # Set the default collection parser.
