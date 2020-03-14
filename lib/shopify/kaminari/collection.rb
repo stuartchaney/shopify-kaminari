@@ -39,7 +39,7 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
           h.last.to_sym => { link: h.first, limit: query['limit'].first.to_i, page_info: query['page_info'].last }
         )
       rescue => e
-        p e
+        p "cursor_pagination ->",e
       end
     end
 
