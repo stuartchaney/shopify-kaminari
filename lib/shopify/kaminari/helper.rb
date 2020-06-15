@@ -2,7 +2,11 @@ module Shopify
   module Kaminari
     module Helper
       def cursor_paginate(items, options = {})
-        return paginate(items, options) unless items.resource_class.cursor_based?
+        return if items.blank?
+
+        if !items.respond_to?(:resource_class) || !items.resource_class&.cursor_based?
+          return paginate(items, options)
+        end
 
         return unless items.respond_to?(:cursor_pagination)
 
@@ -16,6 +20,7 @@ module Shopify
             url_for(
               additional_params.merge(
                 page_info: items.cursor_pagination.dig(:previous, :page_info),
+                direction: 'previous',
                 limit: items.cursor_pagination.dig(:previous, :limit)
               )
             ),
@@ -27,6 +32,7 @@ module Shopify
             url_for(
               additional_params.merge(
                 page_info: items.cursor_pagination.dig(:next, :page_info),
+                direction: 'next',
                 limit: items.cursor_pagination.dig(:next, :limit)
               )
             ),
