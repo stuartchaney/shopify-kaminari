@@ -12,6 +12,7 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
   include ::Kaminari::ConfigurationMethods
 
   alias_method :model, :resource_class
+  delegate :cursor_based?, to: :resource_class
 
   # Shopify returns this many records by default if no limit is given.
   DEFAULT_LIMIT_VALUE = 50
@@ -22,6 +23,30 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
 
   def response
     @response ||= resource_class.connection.response
+  end
+
+  def next(params = {})
+    page(:next, params)
+  end
+
+  def previous(params = {})
+    page(:previous, params)
+  end
+
+  def page(direction, params = {})
+    return self.class.new([]) if !resource_class || !cursor_based? || cursor_pagination[direction].blank?
+
+    params = original_params.merge(params).merge(page_info: cursor_pagination.dig(direction, :page_info))
+
+    resource_class.all params: params
+  end
+
+  def page_info
+    original_params && original_params[:page_info]
+  end
+
+  def next_page_info
+    cursor_pagination.dig(:next, :page_info)
   end
 
   def cursor_pagination
@@ -39,7 +64,7 @@ class Shopify::Kaminari::Collection < ActiveResource::Collection
           h.last.to_sym => { link: h.first, limit: query['limit'].first.to_i, page_info: query['page_info'].last }
         )
       rescue => e
-        p e
+        p "cursor_pagination ->",e
       end
     end
 
